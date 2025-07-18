@@ -36,7 +36,9 @@ set(BUSTUB_CLANG_SEARCH_PATH "/usr/local/bin" "/usr/bin" "/usr/local/opt/llvm/bi
         "/usr/local/Cellar/llvm/12.0.1/bin" "/opt/homebrew/opt/llvm@12/bin/")
 
 if (CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
-    if (CMAKE_CXX_COMPILER_VERSION MATCHES "^12.")
+    if (CMAKE_CXX_COMPILER_VERSION MATCHES "^14.")
+        message(STATUS "You're using ${CMAKE_CXX_COMPILER_ID} ${CMAKE_CXX_COMPILER_VERSION}")
+    elseif (CMAKE_CXX_COMPILER_VERSION MATCHES "^12.")
         message(STATUS "You're using ${CMAKE_CXX_COMPILER_ID} ${CMAKE_CXX_COMPILER_VERSION}")
     else ()
         message(WARNING "!! We recommend that you use clang-12 for developing BusTub. You're using ${CMAKE_CXX_COMPILER_ID} ${CMAKE_CXX_COMPILER_VERSION}, a different version.")

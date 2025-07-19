@@ -235,7 +235,7 @@ class Trie {
    * @brief Construct a new Trie object. Initialize the root node with '\0'
    * character.
    */
-  Trie() : root_(std::make_unique<TrieNode>('\0')){};
+  Trie() : root_(std::make_unique<TrieNode>('\0')) {}
 
   /**
    * @brief Insert key-value pair into the trie.

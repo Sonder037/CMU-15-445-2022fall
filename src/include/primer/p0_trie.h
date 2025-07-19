@@ -266,6 +266,7 @@ class Trie {
     if (key.empty()) {
       return false;
     }
+    latch_.WLock();
     auto cur_node = root_.get();
     for (size_t i = 0; i < key.size(); ++i) {
       char ch = key[i];
@@ -276,6 +277,7 @@ class Trie {
         if (is_last_char) {
           auto new_node = std::make_unique<TrieNodeWithValue<T>>(ch, value);
           cur_node->InsertChildNode(ch, std::move(new_node));
+          latch_.WUnlock();
           return true;
         }
         auto new_node = std::make_unique<TrieNode>(ch);
@@ -285,16 +287,19 @@ class Trie {
         auto child_node = child_node_ptr->get();
         if (is_last_char) {
           if (child_node->IsEndNode()) {
+            latch_.WUnlock();
             return false;
           }
           cur_node->RemoveChildNode(ch);
           auto new_node = std::make_unique<TrieNodeWithValue<T>>(std::move(*child_node), value);
           cur_node->InsertChildNode(ch, std::move(new_node));
+          latch_.WUnlock();
           return true;
         }
         cur_node = child_node;
       }
     }
+    latch_.WUnlock();
     return false;
   }
 
@@ -317,11 +322,13 @@ class Trie {
     if (key.empty()) {
       return false;
     }
+    latch_.WLock();
     auto cur_node = root_.get();
     std::stack<std::pair<char, TrieNode *>> node_stack;
     for (const auto &ch : key) {
       auto child_node_ptr = cur_node->GetChildNode(ch);
       if (child_node_ptr == nullptr) {
+        latch_.WUnlock();
         return false;
       }
       node_stack.push({ch, cur_node});
@@ -336,6 +343,7 @@ class Trie {
       }
       child_node_ptr->RemoveChildNode(ch);
     }
+    latch_.WUnlock();
     return true;
   }
 
@@ -361,30 +369,36 @@ class Trie {
       *success = false;
       return {};
     }
+    latch_.RLock();
     auto cur_node = root_.get();
     for (size_t i = 0; i < key.size(); ++i) {
       auto ch = key[i];
       auto child_node_ptr = cur_node->GetChildNode(ch);
       if (child_node_ptr == nullptr) {
         *success = false;
+        latch_.RUnlock();
         return {};
       }
       cur_node = child_node_ptr->get();
       if (i == key.size() - 1) {
         if (!cur_node->IsEndNode()) {
           *success = false;
+          latch_.RUnlock();
           return {};
         }
         // 检查类型是否正确
         auto value_node = dynamic_cast<TrieNodeWithValue<T> *>(cur_node);
         if (value_node == nullptr) {
           *success = false;
+          latch_.RUnlock();
           return {};
         }
         *success = true;
+        latch_.RUnlock();
         return value_node->GetValue();
       }
     }
+    latch_.RUnlock();
     return {};
   }
 };

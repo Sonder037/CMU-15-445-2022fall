@@ -290,9 +290,7 @@ class Trie {
             latch_.WUnlock();
             return false;
           }
-          cur_node->RemoveChildNode(ch);
-          auto new_node = std::make_unique<TrieNodeWithValue<T>>(std::move(*child_node), value);
-          cur_node->InsertChildNode(ch, std::move(new_node));
+          child_node_ptr->reset(new TrieNodeWithValue<T>(std::move(*child_node), value));
           latch_.WUnlock();
           return true;
         }

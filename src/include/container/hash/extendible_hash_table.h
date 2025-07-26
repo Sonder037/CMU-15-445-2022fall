@@ -35,9 +35,11 @@ namespace bustub {
 template <typename K, typename V>
 class ExtendibleHashTable : public HashTable<K, V> {
  public:
+  class Bucket;
+
   /**
    *
-   * TODO(P1): Add implementation
+   * TODO(P1): Add implementation #finished
    *
    * @brief Create a new ExtendibleHashTable.
    * @param bucket_size: fixed size for each bucket
@@ -65,7 +67,7 @@ class ExtendibleHashTable : public HashTable<K, V> {
 
   /**
    *
-   * TODO(P1): Add implementation
+   * TODO(P1): Add implementation #finished
    *
    * @brief Find the value associated with the given key.
    *
@@ -109,6 +111,9 @@ class ExtendibleHashTable : public HashTable<K, V> {
    * Bucket class for each hash table bucket that the directory points to.
    */
   class Bucket {
+    /**
+     * @TODO: 用双向列表加unordered_map维护应该能使操作复杂度降到O（1）
+     */
    public:
     explicit Bucket(size_t size, int depth = 0);
 
@@ -125,7 +130,7 @@ class ExtendibleHashTable : public HashTable<K, V> {
 
     /**
      *
-     * TODO(P1): Add implementation
+     * TODO(P1): Add implementation #finished
      *
      * @brief Find the value associated with the given key in the bucket.
      * @param key The key to be searched.
@@ -136,7 +141,7 @@ class ExtendibleHashTable : public HashTable<K, V> {
 
     /**
      *
-     * TODO(P1): Add implementation
+     * TODO(P1): Add implementation #finished
      *
      * @brief Given the key, remove the corresponding key-value pair in the bucket.
      * @param key The key to be deleted.
@@ -146,7 +151,7 @@ class ExtendibleHashTable : public HashTable<K, V> {
 
     /**
      *
-     * TODO(P1): Add implementation
+     * TODO(P1): Add implementation #finished
      *
      * @brief Insert the given key-value pair into the bucket.
      *      1. If a key already exists, the value should be updated.
@@ -173,6 +178,17 @@ class ExtendibleHashTable : public HashTable<K, V> {
   int num_buckets_;     // The number of buckets in the hash table
   mutable std::mutex latch_;
   std::vector<std::shared_ptr<Bucket>> dir_;  // The directory of the hash table
+
+  /**
+   * @brief 扩展HashTable
+   */
+  void ExpandTable();
+
+  /**
+   * @brief 分裂bucket，并重分配索引的指针
+   * @param bucket 要分裂的bucket
+   */
+  void SplitBucket(std::shared_ptr<Bucket> bucket);
 
   // The following functions are completely optional, you can delete them if you have your own ideas.
 

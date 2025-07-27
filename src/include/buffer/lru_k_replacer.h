@@ -14,6 +14,7 @@
 
 #include <limits>
 #include <list>
+#include <memory>
 #include <mutex>  // NOLINT
 #include <unordered_map>
 #include <vector>
@@ -55,7 +56,7 @@ class LRUKReplacer {
   ~LRUKReplacer() = default;
 
   /**
-   * TODO(P1): Add implementation
+   * TODO(P1): Add implementation #finished
    *
    * @brief Find the frame with largest backward k-distance and evict that frame. Only frames
    * that are marked as 'evictable' are candidates for eviction.
@@ -133,13 +134,134 @@ class LRUKReplacer {
   auto Size() -> size_t;
 
  private:
+  class Node;
+  class List;
+
+  /**
+   * @brief : 查找结点
+   */
+  auto Find(frame_id_t frame_id) -> std::shared_ptr<Node> {
+    auto it = frame_map_.find(frame_id);
+    if (it != frame_map_.end()) {
+      return it->second;
+    }
+    return nullptr;
+  }
   // TODO(student): implement me! You can replace these member variables as you like.
   // Remove maybe_unused if you start using them.
+
   [[maybe_unused]] size_t current_timestamp_{0};
   [[maybe_unused]] size_t curr_size_{0};
   [[maybe_unused]] size_t replacer_size_;
-  [[maybe_unused]] size_t k_;
+  size_t k_;
   std::mutex latch_;
+  std::shared_ptr<List> list_{std::make_shared<List>()};
+  std::unordered_map<frame_id_t, std::shared_ptr<Node>> frame_map_{};
+
+  class Node {
+   public:
+    Node() = default;
+    explicit Node(frame_id_t frame_id) : frame_id_(frame_id), count_(1) {}
+
+    frame_id_t frame_id_{-1};
+    size_t count_{0};
+    bool evictable_{false};
+    std::shared_ptr<Node> prev_;
+    std::shared_ptr<Node> next_;
+  };
+
+  class List {
+   public:
+    List() : head_(std::make_shared<Node>()), middle_(std::make_shared<Node>()), tail_(std::make_shared<Node>()) {
+      head_->next_ = middle_;
+      middle_->prev_ = head_;
+      middle_->next_ = tail_;
+      tail_->prev_ = middle_;
+    }
+
+    ~List() {
+      auto current = middle_->next_;
+      while (current != tail_) {
+        auto next = current->next_;
+        current->prev_.reset();
+        current->next_.reset();
+        current = next;
+      }
+
+      current = head_->next_;
+      while (current != middle_) {
+        auto next = current->next_;
+        current->prev_.reset();
+        current->next_.reset();
+        current = next;
+      }
+
+      head_->next_.reset();
+      middle_->prev_.reset();
+      middle_->next_.reset();
+      tail_->prev_.reset();
+    }
+
+    auto Size() -> size_t { return size_; }
+
+    auto IncrementSize() -> void { size_++; }
+
+    auto DecrementSize() -> void {
+      if (size_ > 0) {
+        size_--;
+      }
+    }
+
+    auto Remove(std::shared_ptr<Node> &node) -> void {
+      node->prev_->next_ = node->next_;
+      node->next_->prev_ = node->prev_;
+      node->next_.reset();
+      node->prev_.reset();
+      if (node->evictable_) {
+        size_--;
+      }
+    }
+
+    /**
+     * @brief 加入到 cache list ，即访问次数 >=k 次的节点
+     */
+    auto InsertCacheList(std::shared_ptr<Node> &node) -> void {
+      node->prev_ = middle_->prev_;
+      node->next_ = middle_;
+      middle_->prev_->next_ = node;
+      middle_->prev_ = node;
+      if (node->evictable_) {
+        size_++;
+      }
+    }
+
+    /**
+     * @brief 加入到 history list ，即访问次数 <k 次的节点
+     */
+    auto InsertHistoryList(std::shared_ptr<Node> &node) -> void {
+      node->next_ = tail_;
+      node->prev_ = tail_->prev_;
+      tail_->prev_->next_ = node;
+      tail_->prev_ = node;
+      if (node->evictable_) {
+        size_++;
+      }
+    }
+
+    auto GetCacheList() -> std::shared_ptr<Node> { return head_->next_; }
+
+    auto GetHistoryList() -> std::shared_ptr<Node> { return middle_->next_; }
+
+    auto GetCacheListEnd() -> std::shared_ptr<Node> { return middle_; }
+
+    auto GetHistoryListEnd() -> std::shared_ptr<Node> { return tail_; }
+
+   private:
+    size_t size_{0};
+    std::shared_ptr<Node> head_;
+    std::shared_ptr<Node> middle_;
+    std::shared_ptr<Node> tail_;
+  };
 };
 
 }  // namespace bustub

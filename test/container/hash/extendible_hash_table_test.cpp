@@ -121,23 +121,23 @@ TEST(ExtendibleHashTableTest, ConcurrentInsertFind2Test) {
   // Run concurrent test multiple times to guarantee correctness.
   for (int run = 0; run < num_runs; run++) {
     auto table = std::make_unique<ExtendibleHashTable<int, int>>(2);
-    std::vector<std::thread> threadsInsert;
-    std::vector<std::thread> threadsFind;
-    threadsInsert.reserve(num_threads);
-    threadsFind.reserve(num_threads);
+    std::vector<std::thread> threads_insert;
+    std::vector<std::thread> threads_find;
+    threads_insert.reserve(num_threads);
+    threads_find.reserve(num_threads);
 
     for (int tid = 0; tid < num_threads; tid++) {
-      threadsInsert.emplace_back([tid, &table]() {
+      threads_insert.emplace_back([tid, &table]() {
         for (int i = tid * 10; i < (tid + 1) * 10; i++) {
           table->Insert(i, i);
         }
       });
     }
     for (int i = 0; i < num_threads; i++) {
-      threadsInsert[i].join();
+      threads_insert[i].join();
     }
     for (int tid = 0; tid < num_threads; tid++) {
-      threadsFind.emplace_back([tid, &table]() {
+      threads_find.emplace_back([tid, &table]() {
         for (int i = tid * 10; i < (tid + 1) * 10; i++) {
           int val;
           EXPECT_TRUE(table->Find(i, val));
@@ -145,7 +145,7 @@ TEST(ExtendibleHashTableTest, ConcurrentInsertFind2Test) {
       });
     }
     for (int i = 0; i < num_threads; i++) {
-      threadsFind[i].join();
+      threads_find[i].join();
     }
   }
 }
